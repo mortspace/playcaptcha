@@ -1,4 +1,4 @@
-/* Toy catalogue for ClawCaptcha. The art is a set of soft-3D vinyl renders
+/* Toy catalogue for SataruzCaptcha. The art is a set of soft-3D vinyl renders
  * (PNG with transparent background), served from `assetBase` + `<id>.png`.
  * `accent` tints the toy's name in the challenge line. */
 

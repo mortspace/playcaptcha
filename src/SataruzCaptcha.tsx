@@ -4,7 +4,7 @@ import { TOY_META, type ToyId } from './toys.ts'
 import { CLAW_ARM_L, CLAW_ARM_R, CLAW_BODY, CLAW_PIVOT } from './clawArt.ts'
 
 /*
- * ClawCaptcha — a claw-machine human check, operated like the real thing.
+ * SataruzCaptcha — a claw-machine human check, operated like the real thing.
  *
  *  1. MOVE  — drag the joystick (or hold ◀ ▶ / arrow keys); the claw drives
  *             along its rail under a coil spring, swaying as it goes.
@@ -211,7 +211,7 @@ type Soft = {
 
 type Phase = 'idle' | 'seq' | 'carry' | 'toTray' | 'celebrate' | 'deny' | 'return' | 'done'
 
-export interface ClawCaptchaProps {
+export interface SataruzCaptchaProps {
   /** Which toy the challenge asks for. A random toy each mount when omitted. */
   target?: ToyId
   /** Fired once when the right toy lands in the tray. */
@@ -223,13 +223,13 @@ export interface ClawCaptchaProps {
   className?: string
 }
 
-export function ClawCaptcha({
+export function SataruzCaptcha({
   target: targetProp,
   onVerify,
-  title = 'Verify you’re human',
+  title = 'Verify you're human',
   assetBase = '/toys/',
   className,
-}: ClawCaptchaProps) {
+}: SataruzCaptchaProps) {
   const reduce = useReducedMotion()
 
   // unpinned challenges ask for a different toy every mount (stable within one)
@@ -938,10 +938,10 @@ export function ClawCaptcha({
 
               <div className="clawcap-info-head">
                 <span className="clawcap-info-tile">
-                  <img src="/playcaptcha.svg" alt="" aria-hidden="true" />
+                  <img src="/sataruz-captcha.svg" alt="" aria-hidden="true" />
                 </span>
                 <h4 className="clawcap-info-title">
-                  PlayCaptcha <span className="clawcap-info-ver">v1</span>
+                  SataruzCaptcha <span className="clawcap-info-ver">v1</span>
                 </h4>
                 <p className="clawcap-info-tag">Catch the right toy to prove you’re human.</p>
               </div>
