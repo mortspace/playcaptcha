@@ -37,18 +37,18 @@ const GRIP_OFFSET = 46 // cable end → where the gripped toy's head centre sits
 const TRAY = { cx: 232, cy: GH + 56, min: 150, max: 320 }
 
 const TOY_SET: Array<{ toy: ToyId; w: number }> = [
-  { toy: 'duck', w: 96 },
-  { toy: 'bear', w: 92 },
-  { toy: 'panda', w: 86 },
-  { toy: 'bunny', w: 78 },
-  { toy: 'dino', w: 92 },
-  { toy: 'penguin', w: 84 },
-  { toy: 'fox', w: 80 },
-  { toy: 'frog', w: 76 },
-  { toy: 'whale', w: 90 },
-  { toy: 'cat', w: 74 },
-  { toy: 'puppy', w: 72 },
-  { toy: 'unicorn', w: 82 },
+  { toy: 'cao_yanbing', w: 90 },
+  { toy: 'irelia', w: 88 },
+  { toy: 'titan', w: 94 },
+  { toy: 'frok', w: 82 },
+  { toy: 'uriel', w: 92 },
+  { toy: 'jormungandr', w: 98 },
+  { toy: 'netherworld', w: 85 },
+  { toy: 'zhuqing', w: 86 },
+  { toy: 'nine', w: 76 },
+  { toy: 'samael', w: 89 },
+  { toy: 'ratu_salju', w: 84 },
+  { toy: 'qingluan', w: 80 },
 ]
 type Slot = { toy: ToyId; w: number; x: number; b: number; z: number; rot: number; dropFrom: number; delay: number }
 
@@ -227,7 +227,7 @@ export function SataruzCaptcha({
   target: targetProp,
   onVerify,
   title = 'Verify you're human',
-  assetBase = '/toys/',
+  assetBase = '/sataruz/',
   className,
 }: SataruzCaptchaProps) {
   const reduce = useReducedMotion()

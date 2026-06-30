@@ -20,7 +20,7 @@ This is part of [FeralUI](https://github.com/mortspace/feralui).
 npm install sataruz-captcha
 ```
 
-Then copy the `assets/` folder into whatever your app serves statically. The component looks for the toy renders under `/toys/` and the logo at `/sataruz-captcha.svg` by default. Use the `assetBase` prop to change the location of toy assets.
+Then copy the `assets/` folder into whatever your app serves statically. The component looks for the character renders under `/sataruz/` and the logo at `/sataruz-captcha.svg` by default. Use the `assetBase` prop to change the location of character assets.
 
 ```tsx
 import { SataruzCaptcha } from 'sataruz-captcha'
@@ -29,13 +29,13 @@ import 'sataruz-captcha/sataruz-captcha.css'
 <SataruzCaptcha onVerify={() => unlock()} />
 ```
 
-Leave `target` off and every mount asks for a different random toy. Or pin one:
+Leave `target` off and every mount asks for a different random character. Or pin one:
 
 ```tsx
-<SataruzCaptcha target="duck" onVerify={() => unlock()} />
+<SataruzCaptcha target="cao_yanbing" onVerify={() => unlock()} />
 ```
 
-The 12 toy ids: duck, bear, panda, bunny, dino, penguin, fox, frog, whale, cat, puppy, unicorn.
+The 12 character ids: cao_yanbing, irelia, titan, frok, uriel, jormungandr, netherworld, zhuqing, nine, samael, ratu_salju, qingluan.
 
 Other props: `title` (the heading), `assetBase`, `className`. That's all of them.
 
@@ -55,4 +55,4 @@ CSS vars on any ancestor:
 
 Keyboard runs the whole thing (arrows + space/enter), the joystick is a real slider role, and prefers-reduced-motion swaps the decorative stuff (entrance tumble, confetti, ring pulse) for instant state changes.
 
-MIT. Toy renders live in assets/toys.
+MIT. Character renders live in assets/sataruz.
