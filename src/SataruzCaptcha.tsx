@@ -226,7 +226,7 @@ export interface SataruzCaptchaProps {
 export function SataruzCaptcha({
   target: targetProp,
   onVerify,
-  title = 'Verify you're human',
+  title = "Verify you're human",
   assetBase = '/sataruz/',
   className,
 }: SataruzCaptchaProps) {
