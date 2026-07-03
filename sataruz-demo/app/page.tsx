@@ -66,6 +66,13 @@ export default function Home() {
 import 'sataruz-captcha/sataruz-captcha.css'
 
 <SataruzCaptcha onVerify={() => unlock()} />`}</code></pre>
+
+              <h3 className="font-semibold text-white mt-4 mb-3">Customize Icon Size</h3>
+              <p className="text-xs text-slate-400 mb-2">Override CSS variables in your stylesheet:</p>
+              <pre className="bg-slate-900 rounded p-3 text-xs text-slate-300 overflow-x-auto"><code>{`.clawcap {
+  --clawcap-icon-container-size: 280px;
+  --clawcap-icon-size: 200px;
+}`}</code></pre>
             </div>
           </section>
         </div>

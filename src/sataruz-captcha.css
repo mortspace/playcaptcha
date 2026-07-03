@@ -19,6 +19,8 @@
   --cc-fill-2: #e9e9ee;
   --cc-accent: var(--clawcap-accent, #1c1c1e);
   --cc-green: #34c759;
+  --cc-icon-container-size: var(--clawcap-icon-container-size, 220px);
+  --cc-icon-size: var(--clawcap-icon-size, 160px);
 
   position: relative;
   width: 440px;
@@ -179,8 +181,8 @@ button.clawcap-help:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 220px;
-  height: 220px;
+  width: var(--cc-icon-container-size);
+  height: var(--cc-icon-container-size);
   margin-bottom: 24px;
   border-radius: 28px;
   background: var(--cc-fill);
@@ -191,8 +193,8 @@ button.clawcap-help:focus-visible {
 
 .clawcap-info-tile img {
   display: block;
-  width: 160px;
-  height: 160px;
+  width: var(--cc-icon-size);
+  height: var(--cc-icon-size);
 }
 
 .clawcap-info-title {

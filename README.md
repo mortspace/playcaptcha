@@ -50,6 +50,8 @@ CSS vars on any ancestor:
   --clawcap-muted: #8a8a8e;
   --clawcap-accent: #1c1c1e; /* dialog button + focus ring */
   --clawcap-action: #ff5159; /* the big red button */
+  --clawcap-icon-container-size: 220px; /* hero icon container */
+  --clawcap-icon-size: 160px; /* hero icon image */
 }
 ```
 
