@@ -179,10 +179,10 @@ button.clawcap-help:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100px;
-  height: 100px;
-  margin-bottom: 12px;
-  border-radius: 17px;
+  width: 220px;
+  height: 220px;
+  margin-bottom: 24px;
+  border-radius: 28px;
   background: var(--cc-fill);
   box-shadow:
     inset 0 0 0 0.5px rgba(60, 60, 67, 0.1),
@@ -191,8 +191,8 @@ button.clawcap-help:focus-visible {
 
 .clawcap-info-tile img {
   display: block;
-  width: 70px;
-  height: 70px;
+  width: 160px;
+  height: 160px;
 }
 
 .clawcap-info-title {
