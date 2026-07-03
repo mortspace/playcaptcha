@@ -31,7 +31,9 @@
     "react-dom": ">=18"
   },
   "dependencies": {
-    "motion": "^12.0.0"
+    "motion": "^12.0.0",
+    "next": "^16.2.10",
+    "sataruz-captcha": "^0.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
