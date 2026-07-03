@@ -1,6 +1,6 @@
-# playcaptcha
+# sataruz-captcha
 
-A captcha that's a claw machine.
+Playing-Captcha — A captcha that's a claw machine.
 
 It asks for a toy. You drive the claw with the joystick (or arrow keys), hit the red button, the claw dives down and grabs whatever's under it. Carry the catch over the hatch and drop it in. Right toy and you're verified, wrong toy bounces off the lid and goes back on the pile.
 
@@ -17,25 +17,25 @@ This is part of [FeralUI](https://github.com/mortspace/feralui).
 ## setup
 
 ```bash
-npm install playcaptcha
+npm install sataruz-captcha
 ```
 
-Then copy the `assets/` folder into whatever your app serves statically. The component looks for the toy renders under `/toys/` and the logo at `/playcaptcha.svg` by default, `assetBase` moves that.
+Then copy the `assets/` folder into whatever your app serves statically. The component looks for the character renders under `/sataruz/` and the logo at `/sataruz-captcha.svg` by default. Use the `assetBase` prop to change the location of character assets.
 
 ```tsx
-import { ClawCaptcha } from 'playcaptcha'
-import 'playcaptcha/clawcaptcha.css'
+import { SataruzCaptcha } from 'sataruz-captcha'
+import 'sataruz-captcha/sataruz-captcha.css'
 
-<ClawCaptcha onVerify={() => unlock()} />
+<SataruzCaptcha onVerify={() => unlock()} />
 ```
 
-Leave `target` off and every mount asks for a different random toy. Or pin one:
+Leave `target` off and every mount asks for a different random character. Or pin one:
 
 ```tsx
-<ClawCaptcha target="duck" onVerify={() => unlock()} />
+<SataruzCaptcha target="cao_yanbing" onVerify={() => unlock()} />
 ```
 
-The 12 toy ids: duck, bear, panda, bunny, dino, penguin, fox, frog, whale, cat, puppy, unicorn.
+The 12 character ids: cao_yanbing, irelia, titan, frok, uriel, jormungandr, netherworld, zhuqing, nine, samael, ratu_salju, qingluan.
 
 Other props: `title` (the heading), `assetBase`, `className`. That's all of them.
 
@@ -50,9 +50,11 @@ CSS vars on any ancestor:
   --clawcap-muted: #8a8a8e;
   --clawcap-accent: #1c1c1e; /* dialog button + focus ring */
   --clawcap-action: #ff5159; /* the big red button */
+  --clawcap-icon-container-size: 220px; /* hero icon container */
+  --clawcap-icon-size: 160px; /* hero icon image */
 }
 ```
 
 Keyboard runs the whole thing (arrows + space/enter), the joystick is a real slider role, and prefers-reduced-motion swaps the decorative stuff (entrance tumble, confetti, ring pulse) for instant state changes.
 
-MIT. Toy renders live in assets/toys.
+MIT. Character renders live in assets/sataruz.

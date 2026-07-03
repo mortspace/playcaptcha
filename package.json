@@ -1,7 +1,8 @@
 {
-  "name": "playcaptcha",
-  "version": "0.1.0",
-  "description": "claw machine captcha for react - grab the right toy to prove you're human",
+  "name": "sataruz-captcha",
+  "version": "0.1.2",
+  "description": "Playing-Captcha",
+  "author": "YoshCasaster & mortspace",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -12,7 +13,7 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./clawcaptcha.css": "./dist/clawcaptcha.css"
+    "./sataruz-captcha.css": "./dist/sataruz-captcha.css"
   },
   "sideEffects": [
     "**/*.css"
@@ -26,11 +27,13 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "react": ">=18",
+    "react": "^19.2.7",
     "react-dom": ">=18"
   },
   "dependencies": {
-    "motion": "^12.0.0"
+    "motion": "^12.0.0",
+    "next": "^16.2.10",
+    "sataruz-captcha": "^0.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

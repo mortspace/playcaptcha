@@ -1,32 +1,32 @@
-/* Toy catalogue for ClawCaptcha. The art is a set of soft-3D vinyl renders
+/* Toy catalogue for SataruzCaptcha. The art is a set of soft-3D vinyl renders
  * (PNG with transparent background), served from `assetBase` + `<id>.png`.
  * `accent` tints the toy's name in the challenge line. */
 
 export type ToyId =
-  | 'duck'
-  | 'bear'
-  | 'panda'
-  | 'bunny'
-  | 'dino'
-  | 'penguin'
-  | 'fox'
-  | 'frog'
-  | 'whale'
-  | 'cat'
-  | 'puppy'
-  | 'unicorn'
+  | 'cao_yanbing'
+  | 'irelia'
+  | 'titan'
+  | 'frok'
+  | 'uriel'
+  | 'jormungandr'
+  | 'netherworld'
+  | 'zhuqing'
+  | 'nine'
+  | 'samael'
+  | 'ratu_salju'
+  | 'qingluan'
 
 export const TOY_META: Record<ToyId, { label: string; accent: string }> = {
-  duck: { label: 'yellow duck', accent: '#E8A33D' },
-  bear: { label: 'teddy bear', accent: '#C98A4B' },
-  panda: { label: 'panda', accent: '#52525B' },
-  bunny: { label: 'bunny', accent: '#E58AB0' },
-  dino: { label: 'dinosaur', accent: '#5CA86A' },
-  penguin: { label: 'penguin', accent: '#3F4854' },
-  fox: { label: 'fox', accent: '#DD7A3D' },
-  frog: { label: 'frog', accent: '#69A85C' },
-  whale: { label: 'whale', accent: '#5A93C9' },
-  cat: { label: 'cat', accent: '#B08D57' },
-  puppy: { label: 'puppy', accent: '#A1785A' },
-  unicorn: { label: 'unicorn', accent: '#B287D8' },
+  cao_yanbing: { label: 'Cao Yanbing', accent: '#C4A055' },
+  irelia: { label: 'Irelia', accent: '#7B68EE' },
+  titan: { label: 'Titan', accent: '#A9A9A9' },
+  frok: { label: 'Frok', accent: '#32CD32' },
+  uriel: { label: 'Uriel', accent: '#FF6347' },
+  jormungandr: { label: 'Jormungandr', accent: '#228B22' },
+  netherworld: { label: 'Netherworld', accent: '#2F4F4F' },
+  zhuqing: { label: 'Zhuqing', accent: '#FFD700' },
+  nine: { label: '9', accent: '#4169E1' },
+  samael: { label: 'Samael', accent: '#DC143C' },
+  ratu_salju: { label: 'Ratu Salju', accent: '#B0E0E6' },
+  qingluan: { label: 'Qingluan', accent: '#FF69B4' },
 }
