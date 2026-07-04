@@ -35,9 +35,28 @@ Leave `target` off and every mount asks for a different random toy. Or pin one:
 <ClawCaptcha target="duck" onVerify={() => unlock()} />
 ```
 
-The 12 toy ids: duck, bear, panda, bunny, dino, penguin, fox, frog, whale, cat, puppy, unicorn.
+The 12 toy ids: `duck` `bear` `panda` `bunny` `dino` `penguin` `fox` `frog` `whale` `cat` `puppy` `unicorn`
 
-Other props: `title` (the heading), `assetBase`, `className`. That's all of them.
+## props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `target` | `ToyId` | random | Which toy to ask for. Randomized on each mount when omitted. |
+| `onVerify` | `() => void` | — | Fired once when the right toy lands in the tray. |
+| `title` | `string` | — | Heading above the machine. Defaults to the language's built-in title. |
+| `assetBase` | `string` | `'/toys/'` | URL prefix for toy PNG files. |
+| `className` | `string` | — | Extra class on the root element. |
+| `language` | `'en' \| 'zh'` | `'en'` | UI language. Supports English and Chinese. |
+| `randomizeToyPosition` | `boolean` | `true` | Randomize the target toy's position in the pile each mount. |
+| `randomizeClawPosition` | `boolean` | `true` | Randomize the claw's starting position on the rail each mount. |
+
+## language
+
+Built-in support for English and Chinese:
+
+```tsx
+<ClawCaptcha language="zh" onVerify={() => unlock()} />
+```
 
 ## theming
 
