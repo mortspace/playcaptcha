@@ -104,14 +104,17 @@ const shuffle = <T,>(arr: T[]): T[] => {
  *  TARGET sits in the front row with the two gaps beside it left empty, so it
  *  always reads clearly and is easy to grab. Each toy still tumbles in under
  *  gravity (dropFrom + entrance sim) and settles on a soft spring. */
-function scatterPile(target: ToyId): Slot[] {
+function scatterPile(target: ToyId, randomize: boolean): Slot[] {
   const order = shuffle(TOY_SET) // 12 unique toys
   const rest = order.filter((t) => t.toy !== target)
   const tgt = order.find((t) => t.toy === target)!
 
   const nB = 8 // floor row
   const nTop = order.length - nB // 4 nestled on top
-  const bottomIdx = 2 + Math.floor(Math.random() * 4) // 2..5 — where the target rests
+  const targetPos = randomize ? Math.floor(Math.random() * order.length) : 4
+  const isTargetInFront = targetPos < nB
+  const bottomIdx = isTargetInFront ? targetPos : 2 + Math.floor(Math.random() * 4)
+  const backIdx = isTargetInFront ? -1 : targetPos - nB
   const slots: Slot[] = new Array(order.length)
 
   // --- floor row: ON the ground, with SIZE-AWARE spacing. Each neighbour pair
@@ -122,7 +125,7 @@ function scatterPile(target: ToyId): Slot[] {
   const frontW: number[] = []
   const frontToy: Array<{ toy: ToyId; w: number }> = []
   for (let i = 0; i < nB; i++) {
-    const isTarget = i === bottomIdx
+    const isTarget = isTargetInFront && i === bottomIdx
     const t = isTarget ? tgt : rest[r++]
     frontToy.push(t)
     // supporting cast runs smaller than the target so the row fits the glass
@@ -145,7 +148,7 @@ function scatterPile(target: ToyId): Slot[] {
   for (let i = 0; i < nB; i++) {
     const cx = offset + xs[i] * fit + rand(-3, 3)
     centers.push(cx)
-    const isTarget = i === bottomIdx
+    const isTarget = isTargetInFront && i === bottomIdx
     slots[i] = {
       toy: frontToy[i].toy,
       w: frontW[i],
@@ -165,20 +168,21 @@ function scatterPile(target: ToyId): Slot[] {
   //     stay empty so it always reads clearly ---
   const gaps: number[] = []
   for (let g = 0; g < nB - 1; g++) {
-    if (g === bottomIdx - 1 || g === bottomIdx) continue
+    if (isTargetInFront && (g === bottomIdx - 1 || g === bottomIdx)) continue
     gaps.push(g)
   }
   const useGaps = shuffle(gaps).slice(0, nTop)
   let ti = 0
   for (const g of useGaps) {
-    const t = rest[r++]
+    const isTarget = !isTargetInFront && ti === backIdx
+    const t = isTarget ? tgt : rest[r++]
     const cx = (centers[g] + centers[g + 1]) / 2 + rand(-3, 3)
     slots[nB + ti] = {
       toy: t.toy,
-      w: t.w * rand(0.7, 0.8),
+      w: t.w * (isTarget ? rand(0.8, 0.9) : rand(0.7, 0.8)),
       x: Math.min(GW - 26, Math.max(26, cx)),
       b: rand(6, 16), // low: peeking over shoulders, base out of sight
-      z: 1, // BEHIND the floor row
+      z: isTarget ? 3 : 1,
       rot: rand(-8, 8),
       dropFrom: -rand(360, 470),
       delay: 0.45 + ti * 0.08 + rand(0, 0.1), // settle in after the floor row
@@ -221,16 +225,82 @@ export interface ClawCaptchaProps {
   /** Where the toy PNGs are served from. */
   assetBase?: string
   className?: string
+  /** Whether to randomize toy positions. Default: true */
+  randomizeToyPosition?: boolean
+  /** Whether to randomize claw starting position. Default: true */
+  randomizeClawPosition?: boolean
+  /** Language for UI text. Default: 'en' */
+  language?: 'en' | 'zh'
 }
 
 export function ClawCaptcha({
   target: targetProp,
   onVerify,
-  title = 'Verify you’re human',
+  title,
   assetBase = '/toys/',
   className,
+  randomizeToyPosition = true,
+  randomizeClawPosition = true,
+  language = 'en',
 }: ClawCaptchaProps) {
   const reduce = useReducedMotion()
+
+  const i18n = {
+    en: {
+      title: "Verify you're human",
+      instruction: 'Use the claw to grab the',
+      wrongToy: "That's the",
+      findThe: 'Find the',
+      verified: "You're human. Nice catch.",
+      moveTray: 'Move the toy over the drop zone first.',
+      ariaLabel: 'Claw machine verification',
+      ariaAbout: 'About PlayCaptcha',
+      ariaClose: 'Close',
+      ariaMoveClaw: 'Move the claw',
+      steps: ['Move', 'Grab', 'Drop'] as const,
+      stepDescs: [
+        <>Line the claw up right over your prize — joystick or <kbd>←</kbd> <kbd>→</kbd></>,
+        <>Commit. The claw dives, bites and hauls it up — red button or <kbd>Space</kbd></>,
+        <>Ferry it to the hatch and let go. Wrong toy? Straight back on the pile</>,
+      ],
+      gotIt: 'Got it',
+      trayNiceCatch: 'Nice catch!',
+      trayWrongToy: 'Hmm, wrong toy',
+      trayRelease: 'Release!',
+      trayDrop: 'Drop here',
+      ariaDropToy: 'Drop the toy',
+      btnGrab: 'Grab',
+      btnDrop: 'Drop',
+    },
+    zh: {
+      title: '验证你是人类',
+      instruction: '使用爪子抓取',
+      wrongToy: '这是',
+      findThe: '请找到',
+      verified: '你是人类。抓得不错。',
+      moveTray: '请先将玩具移到投放区上方。',
+      ariaLabel: '抓娃娃机验证',
+      ariaAbout: '关于 PlayCaptcha',
+      ariaClose: '关闭',
+      ariaMoveClaw: '移动爪子',
+      steps: ['移动', '抓取', '投放'] as const,
+      stepDescs: [
+        <>将爪子对准你的目标——摇杆或 <kbd>←</kbd> <kbd>→</kbd></>,
+        <>按下按钮。爪子会下降、夹住并提起——红色按钮或 <kbd>空格</kbd></>,
+        <>移到投放口并松手。抓错了？玩具会放回原处</>,
+      ],
+      gotIt: '知道了',
+      trayNiceCatch: '抓到了！',
+      trayWrongToy: '抓错了',
+      trayRelease: '松开！',
+      trayDrop: '投放到此',
+      ariaDropToy: '投放玩具',
+      btnGrab: '抓取',
+      btnDrop: '投放',
+    },
+  }
+  const texts = i18n[language]
+  const displayTitle = title ?? texts.title
 
   // unpinned challenges ask for a different toy every mount (stable within one)
   const [autoTarget] = useState<ToyId>(() => TOY_SET[Math.floor(Math.random() * TOY_SET.length)].toy)
@@ -244,7 +314,7 @@ export function ClawCaptcha({
   const [trayMode, setTrayMode] = useState<'' | 'open' | 'win' | 'no'>('')
 
   // fresh scatter every mount (remount with a key for a new pile)
-  const pile = useMemo(() => scatterPile(target), [target])
+  const pile = useMemo(() => scatterPile(target, randomizeToyPosition), [target, randomizeToyPosition])
 
   const rigEl = useRef<SVGSVGElement>(null)
   const clawEl = useRef<SVGGElement>(null)
@@ -265,7 +335,7 @@ export function ClawCaptcha({
   onVerifyRef.current = onVerify
 
   const sim = useRef({
-    x: GW / 2,
+    x: randomizeClawPosition ? CLAW_MIN + Math.random() * (CLAW_MAX - CLAW_MIN) : GW / 2,
     y: HOME_Y,
     vx: 0,
     drive: 0, // smoothed steering input (eases abrupt key/stick changes)
@@ -709,7 +779,7 @@ export function ClawCaptcha({
               a.setOverTray(false)
               a.setTrayMode('no')
               a.setMessage(
-                `That’s the ${TOY_META[pile[s.carried].toy].label}! Find the ${TOY_META[target].label}.`,
+                `${texts.wrongToy} ${language === 'zh' ? TOY_META[pile[s.carried].toy].labelZh : TOY_META[pile[s.carried].toy].label}! ${texts.findThe} ${language === 'zh' ? TOY_META[target].labelZh : TOY_META[target].label}.`,
               )
               nextStage('beat')
               a.setPhaseBoth('deny')
@@ -795,7 +865,7 @@ export function ClawCaptcha({
         setOverTray(false) // neutral hatch until it opens (right) or rejects (wrong)
         setPhaseBoth('toTray')
       } else {
-        setMessage('Move the toy over the drop zone first.')
+        setMessage(texts.moveTray)
       }
     }
   }
@@ -847,6 +917,7 @@ export function ClawCaptcha({
   }
 
   const t = TOY_META[target]
+  const tLabel = language === 'zh' ? t.labelZh : t.label
   const busy = phase !== 'idle' && phase !== 'carry'
   const stepNo = verified || phase === 'carry' || phase === 'toTray' || phase === 'celebrate' ? 3 : phase === 'seq' ? 2 : 1
   const carried = sim.current.carried
@@ -860,7 +931,7 @@ export function ClawCaptcha({
     <motion.div
       className={className ? `clawcap ${className}` : 'clawcap'}
       role="group"
-      aria-label="Claw machine verification"
+      aria-label={texts.ariaLabel}
       tabIndex={0}
       onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
@@ -891,7 +962,7 @@ export function ClawCaptcha({
         <button
           type="button"
           className="clawcap-help"
-          aria-label="About PlayCaptcha"
+          aria-label={texts.ariaAbout}
           aria-haspopup="dialog"
           onClick={() => setInfoOpen(true)}
         >
@@ -909,7 +980,7 @@ export function ClawCaptcha({
             className="clawcap-info"
             role="dialog"
             aria-modal="true"
-            aria-label="About PlayCaptcha"
+            aria-label={texts.ariaAbout}
             onClick={() => setInfoOpen(false)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -928,7 +999,7 @@ export function ClawCaptcha({
               <button
                 type="button"
                 className="clawcap-info-x"
-                aria-label="Close"
+                aria-label={texts.ariaClose}
                 onClick={() => setInfoOpen(false)}
               >
                 <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">
@@ -943,29 +1014,23 @@ export function ClawCaptcha({
                 <h4 className="clawcap-info-title">
                   PlayCaptcha <span className="clawcap-info-ver">v1</span>
                 </h4>
-                <p className="clawcap-info-tag">Catch the right toy to prove you’re human.</p>
+                <p className="clawcap-info-tag">Catch the right toy to prove you're human.</p>
               </div>
 
               <ol className="clawcap-info-list">
-                {(
-                  [
-                    ['Move', <>Line the claw up right over your prize — joystick or <kbd>←</kbd> <kbd>→</kbd></>],
-                    ['Grab', <>Commit. The claw dives, bites and hauls it up — red button or <kbd>Space</kbd></>],
-                    ['Drop', <>Ferry it to the hatch and let go. Wrong toy? Straight back on the pile</>],
-                  ] as const
-                ).map(([label, desc], i) => (
+                {texts.steps.map((label, i) => (
                   <li key={label}>
                     <span className="clawcap-info-n">{i + 1}</span>
                     <span>
                       <strong>{label}</strong>
-                      <span className="clawcap-info-d">{desc}</span>
+                      <span className="clawcap-info-d">{texts.stepDescs[i]}</span>
                     </span>
                   </li>
                 ))}
               </ol>
 
               <button type="button" className="clawcap-info-done" onClick={() => setInfoOpen(false)}>
-                Got it
+                {texts.gotIt}
               </button>
             </motion.div>
           </motion.div>
@@ -983,7 +1048,7 @@ export function ClawCaptcha({
             exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.24, ease: 'easeOut' }}
           >
-            {verified ? 'Verified' : title}
+            {verified ? (language === 'zh' ? '已验证' : 'Verified') : displayTitle}
           </motion.span>
         </AnimatePresence>
       </h3>
@@ -998,15 +1063,15 @@ export function ClawCaptcha({
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
             {verified ? (
-              'You’re human. Nice catch.'
+              texts.verified
             ) : message ? (
               message
             ) : (
               <>
-                Use the claw to pick up the{' '}
+                {texts.instruction}{' '}
                 <em style={{ color: t.accent }}>
                   <img className="clawcap-sub-toy" src={`${assetBase}${target}.png`} alt="" draggable={false} />
-                  {t.label}
+                  {tLabel}
                 </em>
               </>
             )}
@@ -1017,7 +1082,7 @@ export function ClawCaptcha({
       <ol className="clawcap-steps" aria-hidden="true">
         {/* one shared pill that SLIDES between segments */}
         <span className="clawcap-steps-pill" style={{ transform: `translateX(${(stepNo - 1) * 100}%)` }} />
-        {(['Move', 'Grab', 'Drop'] as const).map((label, i) => (
+        {texts.steps.map((label, i) => (
           <li key={label} className={stepNo === i + 1 ? 'is-active' : undefined}>
             <span className="clawcap-step-n">{i + 1}</span> {label}
           </li>
@@ -1094,7 +1159,7 @@ export function ClawCaptcha({
             <div
               className="cc-joy"
               role="slider"
-              aria-label="Move the claw"
+              aria-label={texts.ariaMoveClaw}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(((sim.current.x - CLAW_MIN) / (CLAW_MAX - CLAW_MIN)) * 100)}
@@ -1173,7 +1238,7 @@ export function ClawCaptcha({
                     <path d="M2.4 12.1h3.7M9.9 12.1h3.7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                 )}
-                <span>{trayMode === 'win' ? 'Nice catch!' : trayMode === 'no' ? 'Hmm, wrong toy' : overTray ? 'Release!' : 'Drop here'}</span>
+                <span>{trayMode === 'win' ? texts.trayNiceCatch : trayMode === 'no' ? texts.trayWrongToy : overTray ? texts.trayRelease : texts.trayDrop}</span>
               </span>
             </div>
 
@@ -1182,7 +1247,7 @@ export function ClawCaptcha({
               className={phase === 'carry' && overTray ? 'cc-action cc-action--ready' : 'cc-action'}
               onClick={action}
               disabled={busy || verified}
-              aria-label={phase === 'carry' ? 'Drop the toy' : 'Grab'}
+              aria-label={phase === 'carry' ? texts.ariaDropToy : texts.btnGrab}
             >
               <AnimatePresence mode="wait" initial={false}>
                 <motion.span
@@ -1193,7 +1258,7 @@ export function ClawCaptcha({
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.16, ease: 'easeOut' }}
                 >
-                  {phase === 'carry' ? 'Drop' : 'Grab'}
+                  {phase === 'carry' ? texts.btnDrop : texts.btnGrab}
                 </motion.span>
               </AnimatePresence>
             </button>
@@ -1213,7 +1278,7 @@ export function ClawCaptcha({
         />
       </div>
 
-      <p className="clawcap-hint">Joystick or ← → to move · Space to grab &amp; drop</p>
+      <p className="clawcap-hint">{language === 'zh' ? '摇杆或 ← → 移动 · 空格键抓取和投放' : 'Joystick or ← → to move · Space to grab & drop'}</p>
     </motion.div>
     </MotionConfig>
   )
