@@ -2,7 +2,11 @@ import { copyFileSync } from 'node:fs'
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  // two entries: the browser component (index) and the Node/server module.
+  // They build into separate chunks so the client bundle never pulls in
+  // node:crypto, and consumers can tree-shake the server half out of the
+  // browser build entirely.
+  entry: ['src/index.ts', 'src/server/index.ts'],
   format: ['esm'],
   dts: true,
   clean: true,

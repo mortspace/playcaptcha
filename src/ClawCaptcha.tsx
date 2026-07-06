@@ -2,6 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from 'motion/react'
 import { TOY_META, type ToyId } from './toys.ts'
 import { CLAW_ARM_L, CLAW_ARM_R, CLAW_BODY, CLAW_PIVOT } from './clawArt.ts'
+import {
+  solvePow,
+  SignalCollector,
+  type Challenge,
+  type VerifyResult,
+} from './verify/index.ts'
 
 /*
  * ClawCaptcha — a claw-machine human check, operated like the real thing.
@@ -212,15 +218,29 @@ type Soft = {
 type Phase = 'idle' | 'seq' | 'carry' | 'toTray' | 'celebrate' | 'deny' | 'return' | 'done'
 
 export interface ClawCaptchaProps {
-  /** Which toy the challenge asks for. A random toy each mount when omitted. */
+  /** Which toy the challenge asks for. A random toy each mount when omitted.
+   *  In server mode, the challenge's target wins — pass this only to pin a toy
+   *  when NOT using server verification. */
   target?: ToyId
-  /** Fired once when the right toy lands in the tray. */
-  onVerify?: () => void
+  /** Fired once when the right toy lands in the tray.
+   *  - Client-only mode: called with no argument (backward compatible).
+   *  - Server mode: called with `{ ok, token, score }` once the server confirms. */
+  onVerify?: (result?: VerifyResult) => void
   /** Heading shown above the machine. */
   title?: string
   /** Where the toy PNGs are served from. */
   assetBase?: string
   className?: string
+
+  // ---- server-backed verification (optional — omit all to stay client-only) ----
+  /** GET a challenge from this URL. Enables server verification. */
+  challengeUrl?: string
+  /** Or supply your own challenge fetcher (overrides challengeUrl). */
+  getChallenge?: (target?: ToyId) => Promise<Challenge>
+  /** POST the attempt to this URL for verification. */
+  verifyUrl?: string
+  /** Or supply your own verifier (overrides verifyUrl). */
+  verifyAttempt?: (input: import('./verify/types.ts').AttemptInput) => Promise<VerifyResult>
 }
 
 export function ClawCaptcha({
@@ -229,16 +249,29 @@ export function ClawCaptcha({
   title = 'Verify you’re human',
   assetBase = '/toys/',
   className,
+  challengeUrl,
+  getChallenge,
+  verifyUrl,
+  verifyAttempt,
 }: ClawCaptchaProps) {
   const reduce = useReducedMotion()
 
+  // server-backed mode is on if ANY of the four server props is set. In that
+  // mode the server's challenge decides the target, PoW runs in the background,
+  // and the green "verified" state only flips after the server confirms.
+  const serverMode = !!(challengeUrl || getChallenge || verifyUrl || verifyAttempt)
+
   // unpinned challenges ask for a different toy every mount (stable within one)
   const [autoTarget] = useState<ToyId>(() => TOY_SET[Math.floor(Math.random() * TOY_SET.length)].toy)
-  const target = targetProp ?? autoTarget
+
+  // the challenge's target wins in server mode; otherwise the prop / auto target
+  const [challenge, setChallenge] = useState<Challenge | null>(null)
+  const target: ToyId = challenge?.target ?? targetProp ?? autoTarget
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [infoOpen, setInfoOpen] = useState(false)
   const [verified, setVerified] = useState(false)
+  const [verifying, setVerifying] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [overTray, setOverTray] = useState(false)
   const [trayMode, setTrayMode] = useState<'' | 'open' | 'win' | 'no'>('')
@@ -263,6 +296,14 @@ export function ClawCaptcha({
   const phaseRef = useRef<Phase>('idle')
   const onVerifyRef = useRef(onVerify)
   onVerifyRef.current = onVerify
+
+  // server-mode plumbing: the PoW solution (resolved before the user finishes),
+  // the signal collector (per-mount), and refs the rAF loop reads to know
+  // whether to gate the verified flip on a server round-trip.
+  const powRef = useRef<import('./verify/types.ts').PowSolution | null>(null)
+  const signalsRef = useRef<SignalCollector | null>(null)
+  if (signalsRef.current === null) signalsRef.current = new SignalCollector()
+  const serverVerifyRef = useRef<(() => Promise<VerifyResult>) | null>(null)
 
   const sim = useRef({
     x: GW / 2,
@@ -309,8 +350,11 @@ export function ClawCaptcha({
     phaseRef.current = p
     setPhase(p)
   }
-  const api = useRef({ setPhaseBoth, setMessage, setVerified, setOverTray, setTrayMode })
-  api.current = { setPhaseBoth, setMessage, setVerified, setOverTray, setTrayMode }
+  const api = useRef({ setPhaseBoth, setMessage, setVerified, setVerifying, setOverTray, setTrayMode })
+  api.current = { setPhaseBoth, setMessage, setVerified, setVerifying, setOverTray, setTrayMode }
+
+  // set once on mount; the rAF loop reads it to gate the verdict
+  const verifyingRef = useRef(false)
 
   const targetIdx = useMemo(() => pile.findIndex((p) => p.toy === target), [pile, target])
 
@@ -721,9 +765,48 @@ export function ClawCaptcha({
         // green ring + check + dimmed glass. No hop, no waggle.
         if (s.stage === 'beat') {
           if (stageP(0.28, dt) >= 1) {
-            nextStage('shine')
-            api.current.setVerified(true) // ring + check + dim run together
-            onVerifyRef.current?.()
+            // server-backed: gate the verdict on an async round-trip. The rAF
+            // loop can't await, so we flip a flag, kick off the POST, and let
+            // its .then() do the verified/deny transition. The loop idles here
+            // (stage stays 'beat', already at p>=1) until the promise resolves.
+            const run = serverVerifyRef.current
+            if (run && !verifyingRef.current) {
+              verifyingRef.current = true
+              api.current.setVerifying(true)
+              run()
+                .then((result) => {
+                  if (result.ok) {
+                    nextStage('shine')
+                    api.current.setVerified(true) // ring + check + dim run together
+                    api.current.setVerifying(false)
+                    verifyingRef.current = false
+                    onVerifyRef.current?.(result)
+                  } else {
+                    // server rejected — treat like a wrong-toy deny so the user
+                    // can retry, but surface the server's reason if it gave one
+                    api.current.setVerifying(false)
+                    verifyingRef.current = false
+                    api.current.setTrayMode('no')
+                    api.current.setMessage(
+                      result.reason ? `Couldn’t verify: ${result.reason}` : 'Verification failed. Try again.',
+                    )
+                    api.current.setPhaseBoth('deny')
+                  }
+                })
+                .catch(() => {
+                  api.current.setVerifying(false)
+                  verifyingRef.current = false
+                  api.current.setTrayMode('no')
+                  api.current.setMessage('Network error during verification. Try again.')
+                  api.current.setPhaseBoth('deny')
+                })
+            }
+            // client-only: fire immediately, same as before
+            if (!run) {
+              nextStage('shine')
+              api.current.setVerified(true)
+              onVerifyRef.current?.()
+            }
           }
         } else if (s.stage === 'shine') {
           if (stageP(0.7, dt) >= 1) api.current.setPhaseBoth('done')
@@ -768,11 +851,78 @@ export function ClawCaptcha({
     return () => cancelAnimationFrame(raf)
   }, [reduce, targetIdx, target, pile])
 
+  // ---- server-backed verification: fetch the challenge on mount, solve the
+  // PoW in the background (it finishes well before a human does), and stand up
+  // a verify closure the rAF loop calls when the right toy lands. Skipped
+  // entirely in client-only mode. ----
+  useEffect(() => {
+    if (!serverMode) {
+      serverVerifyRef.current = null
+      return
+    }
+    let cancelled = false
+    const powAbort = new AbortController()
+
+    const fetcher =
+      getChallenge ??
+      (async (t?: ToyId) => {
+        const url = challengeUrl + (t ? `?target=${encodeURIComponent(t)}` : '')
+        const res = await fetch(url, { headers: { accept: 'application/json' } })
+        if (!res.ok) throw new Error(`challenge fetch failed: ${res.status}`)
+        return (await res.json()) as Challenge
+      })
+
+    fetcher(targetProp)
+      .then((ch) => {
+        if (cancelled) return
+        setChallenge(ch)
+        // kick off the PoW — it resolves into powRef; the verify closure waits
+        // on the same promise so it can't fire before the solve is done
+        const powPromise = solvePow(ch.pow, { signal: powAbort.signal }).then(
+          (sol) => {
+            powRef.current = sol
+            return sol
+          },
+        )
+        // build the verify closure the rAF loop will invoke. Returns the
+        // server's verdict; the loop's .then() handles the UI transition.
+        serverVerifyRef.current = async () => {
+          const signals = signalsRef.current!.build()
+          const pow = await powPromise
+          const input = { challenge: ch, pow, signals }
+          if (verifyAttempt) return verifyAttempt(input)
+          const res = await fetch(verifyUrl!, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', accept: 'application/json' },
+            body: JSON.stringify(input),
+          })
+          if (!res.ok) throw new Error(`verify failed: ${res.status}`)
+          return (await res.json()) as VerifyResult
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMessage('Couldn’t reach the verification service.')
+      })
+
+    return () => {
+      cancelled = true
+      powAbort.abort()
+      serverVerifyRef.current = null
+    }
+    // re-run only if the server-mode config identity changes; target is handled
+    // by the challenge that comes back, not by re-fetching
+  }, [serverMode, challengeUrl, getChallenge, verifyUrl, verifyAttempt, targetProp])
+
   // ---- controls ----
   const action = () => {
     const s = sim.current
     if (verified) return
+    // server mode: no-op until the challenge + PoW are staged (button is also
+    // disabled, but keyboard Space bypasses that)
+    if (serverMode && !serverVerifyRef.current) return
     if (phaseRef.current === 'idle') {
+      // server mode: count every grab attempt for the behavioral score
+      if (serverMode) signalsRef.current?.grabAttempt()
       setMessage(null)
       s.close = 0
       s.stage = 'antic'
@@ -812,6 +962,10 @@ export function ClawCaptcha({
     if (!d || e.pointerId !== d.id) return
     const dx = Math.max(-26, Math.min(26, e.clientX - d.startX))
     dir.current = dx / 26
+    // server mode: record the joystick trajectory + whether the event was
+    // dispatched by real hardware (isTrusted). Synthetic events are isTrusted
+    // false — a strong automation tell.
+    if (serverMode) signalsRef.current?.pointerMove(dx, e.nativeEvent.isTrusted)
     // a stick only ROTATES around its ball joint — it never leaves the socket
     if (stickEl.current) stickEl.current.style.transform = `rotate(${(dx * 1.05).toFixed(1)}deg)`
   }
@@ -834,9 +988,11 @@ export function ClawCaptcha({
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
       dir.current = -1
+      if (serverMode) signalsRef.current?.keyPress(-1, e.nativeEvent.isTrusted)
     } else if (e.key === 'ArrowRight') {
       e.preventDefault()
       dir.current = 1
+      if (serverMode) signalsRef.current?.keyPress(1, e.nativeEvent.isTrusted)
     } else if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
       e.preventDefault()
       action()
@@ -847,7 +1003,10 @@ export function ClawCaptcha({
   }
 
   const t = TOY_META[target]
-  const busy = phase !== 'idle' && phase !== 'carry'
+  // busy = mid-animation OR the server is mid-verify OR (server mode and the
+  // challenge/PoW isn't ready yet — the user would just hit a missing closure)
+  const challengeLoading = serverMode && !serverVerifyRef.current
+  const busy = verifying || challengeLoading || (phase !== 'idle' && phase !== 'carry')
   const stepNo = verified || phase === 'carry' || phase === 'toTray' || phase === 'celebrate' ? 3 : phase === 'seq' ? 2 : 1
   const carried = sim.current.carried
   const carriedW = carried >= 0 ? pile[carried].w : 80
@@ -870,8 +1029,14 @@ export function ClawCaptcha({
     >
       <header className="clawcap-top">
         <motion.span
-          key={verified ? 'ok' : 'idle'}
-          className={verified ? 'clawcap-shield clawcap-shield--ok' : 'clawcap-shield'}
+          key={verified ? 'ok' : verifying ? 'verifying' : 'idle'}
+          className={
+            verified
+              ? 'clawcap-shield clawcap-shield--ok'
+              : verifying
+                ? 'clawcap-shield clawcap-shield--verifying'
+                : 'clawcap-shield'
+          }
           aria-hidden="true"
           initial={verified ? { scale: 0.55 } : false}
           animate={{ scale: 1 }}
@@ -990,7 +1155,7 @@ export function ClawCaptcha({
       <p className="clawcap-sub" aria-live="polite">
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
-            key={verified ? 'done' : (message ?? 'challenge')}
+            key={verified ? 'done' : verifying ? 'verifying' : challengeLoading ? 'loading' : (message ?? 'challenge')}
             style={{ display: 'inline-block' }}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -999,6 +1164,10 @@ export function ClawCaptcha({
           >
             {verified ? (
               'You’re human. Nice catch.'
+            ) : verifying ? (
+              'Verifying with the server…'
+            ) : challengeLoading ? (
+              'Preparing a challenge…'
             ) : message ? (
               message
             ) : (

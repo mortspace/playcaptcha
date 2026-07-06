@@ -79,6 +79,21 @@
   background: var(--cc-green);
 }
 
+/* server round-trip in flight — a calm pulse so the brief wait reads as
+   intentional work, not a freeze. prefers-reduced-motion drops the animation. */
+.clawcap-shield--verifying {
+  color: var(--cc-green);
+  background: color-mix(in srgb, var(--cc-green) 14%, var(--cc-fill));
+  animation: clawcap-shield-pulse 1.1s ease-in-out infinite;
+}
+@keyframes clawcap-shield-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clawcap-shield--verifying { animation: none; opacity: 0.75; }
+}
+
 /* the help icon is a real button */
 button.clawcap-help {
   border: none;

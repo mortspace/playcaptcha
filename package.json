@@ -1,6 +1,6 @@
 {
   "name": "playcaptcha",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "claw machine captcha for react - grab the right toy to prove you're human",
   "type": "module",
   "license": "MIT",
@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js"
     },
     "./clawcaptcha.css": "./dist/clawcaptcha.css"
   },
@@ -33,6 +37,7 @@
     "motion": "^12.0.0"
   },
   "devDependencies": {
+    "@types/node": "^26.1.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "tsup": "^8.3.0",
