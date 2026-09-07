@@ -562,9 +562,16 @@ button.clawcap-help:focus-visible {
   width: 36px;
   overflow: visible;
   transform-origin: 18px 0;
-  z-index: 20;
+  z-index: 0;
   will-change: transform;
   filter: drop-shadow(0 3px 3px rgba(30, 30, 40, 0.14));
+}
+
+.cc-carry-layer {
+  position: absolute;
+  inset: 8px;
+  z-index: 40;
+  pointer-events: none;
 }
 
 .cc-carried {
@@ -575,7 +582,7 @@ button.clawcap-help:focus-visible {
   pointer-events: none;
   filter: drop-shadow(0 8px 10px rgba(30, 30, 40, 0.18));
   will-change: transform;
-  transform-origin: 50% 12%; /* swings from the grip point, not its belly */
+  transform-origin: 50% 50%;
 }
 
 /* control panel — one flat grouped surface, evenly spaced */
@@ -593,11 +600,15 @@ button.clawcap-help:focus-visible {
 }
 
 /* joystick: recessed socket + chrome stick, sized to stay INSIDE the panel
-   (socket 44px, shaft 16px, ball 18px → max height 56px incl. tilt) */
+   (socket 44px, shaft 16px, ball 18px → max height 56px incl. tilt).
+   Width matches the action button so the tray sits dead-centre between them;
+   the bottom margin biases the centred box UP by 5px, putting the SOCKET's
+   centre (not the box's) on the same lateral axis as the button. */
 .cc-joy {
   position: relative;
-  width: 60px;
+  width: 56px;
   height: 58px;
+  margin-bottom: 10px;
   flex: none;
   cursor: grab;
   touch-action: none;
@@ -699,12 +710,35 @@ button.clawcap-help:focus-visible {
     0 1px 2px -1px rgba(30, 30, 40, 0.06);
 }
 
+.cc-tray-lip {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: 8px;
+  height: 5px;
+  z-index: 3;
+  border-radius: 2px 2px 5px 5px;
+  background: #dfe2e7;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.cc-tray--open .cc-tray-lip {
+  z-index: 45;
+}
+
+.cc-tray--receiving .cc-tray-label {
+  opacity: 0;
+}
+
 /* clipped frame so the sliding doors disappear off the sides */
 .cc-tray-hatch {
   position: absolute;
-  inset: 0;
-  border-radius: 14px;
+  inset: 6px 7px 10px;
+  border-radius: 7px;
   overflow: hidden;
+  border: 1px solid #d8dbe1;
+  box-shadow: none;
 }
 
 /* the chute, revealed once the doors slide open — not a flat black box but a
@@ -714,11 +748,9 @@ button.clawcap-help:focus-visible {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(130% 100% at 50% 0%, rgba(255, 255, 255, 0.07), transparent 42%),
-    radial-gradient(85% 90% at 50% 78%, rgba(0, 0, 0, 0.55), transparent 75%),
-    linear-gradient(180deg, #35363d 0%, #1e1f25 48%, #14151a 100%);
+    linear-gradient(180deg, #838b96 0%, #aab1ba 52%, #c3c8d0 100%);
   box-shadow:
-    inset 0 10px 14px -6px rgba(0, 0, 0, 0.8),
+    inset 0 8px 10px -6px rgba(35, 43, 55, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
     inset 4px 0 8px -5px rgba(0, 0, 0, 0.7),
     inset -4px 0 8px -5px rgba(0, 0, 0, 0.7);
@@ -746,11 +778,9 @@ button.clawcap-help:focus-visible {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 51%; /* slight overlap so the two halves never show a hairline gap */
-  background: linear-gradient(180deg, #fdfdfe 0%, #edeef2 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -10px 13px -10px rgba(30, 30, 40, 0.2);
+  width: 100%;
+  background: #f0f1f4;
+  box-shadow: none;
   transition:
     transform 0.42s cubic-bezier(0.645, 0.045, 0.355, 1),
     background 0.25s ease;
@@ -761,7 +791,7 @@ button.clawcap-help:focus-visible {
 }
 
 .cc-tray-door--r {
-  right: 0;
+  display: none;
 }
 
 /* one seamless skin laid over the closed doors: while shut the lid is a single
@@ -769,45 +799,43 @@ button.clawcap-help:focus-visible {
    doors part, and fades back in late so the shutting slide still reads. */
 .cc-tray-skin {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, #fdfdfe 0%, #edeef2 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -10px 13px -10px rgba(30, 30, 40, 0.2);
+  inset: auto 0 0;
+  height: 7px;
+  background: #e3e6eb;
+  box-shadow: none;
   transition:
     background 0.25s ease,
-    opacity 0.2s ease 0.3s;
+    transform 0.42s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
 .cc-tray--open .cc-tray-skin {
-  opacity: 0;
+  transform: translateY(-35px);
   transition:
-    background 0.25s ease,
-    opacity 0.12s ease;
+    transform 0.42s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
 .cc-tray--hot .cc-tray-skin {
-  background: linear-gradient(180deg, #f5fbf7 0%, #e9f6ee 100%);
+  background: #edf6f0;
 }
 
 .cc-tray--win .cc-tray-skin {
-  background: linear-gradient(180deg, #f0faf3 0%, #ddf2e4 100%);
+  background: #e8f4ec;
 }
 
 .cc-tray--no .cc-tray-skin {
-  background: linear-gradient(180deg, #fff7ee 0%, #fdecd8 100%);
+  background: #faf0e5;
 }
 
 /* the label rides on top of the closed doors */
 .cc-tray-label {
   position: absolute;
-  inset: 0;
+  inset: 0 0 3px;
   z-index: 2;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   color: var(--cc-muted);
   font-size: 0.75rem; /* 12px label */
   font-weight: 500;
@@ -840,7 +868,7 @@ button.clawcap-help:focus-visible {
 
 /* OPEN — doors part, chute shows, label clears out of the way */
 .cc-tray--open .cc-tray-door--l {
-  transform: translateX(-101%);
+  transform: translateY(-100%);
 }
 
 .cc-tray--open .cc-tray-door--r {
@@ -854,7 +882,7 @@ button.clawcap-help:focus-visible {
 /* HOT — a toy hovers over the closed hatch: ready. Green ring + label, only a
    whisper of tint on the lid (no generic green box). */
 .cc-tray--hot .cc-tray-door {
-  background: linear-gradient(180deg, #f5fbf7 0%, #e9f6ee 100%);
+  background: #edf6f0;
 }
 
 .cc-tray--hot .cc-tray-label {
@@ -867,7 +895,7 @@ button.clawcap-help:focus-visible {
 
 /* WIN — the hatch has snapped shut on the catch: green ring + a single ripple */
 .cc-tray--win .cc-tray-door {
-  background: linear-gradient(180deg, #f0faf3 0%, #ddf2e4 100%);
+  background: #e8f4ec;
 }
 
 .cc-tray--win .cc-tray-label {
@@ -955,7 +983,7 @@ button.clawcap-help:focus-visible {
 /* NO — the doors stayed shut: an amber ring + label and one apologetic shake.
    Amber (not red) — it's "try again", not an error. */
 .cc-tray--no .cc-tray-door {
-  background: linear-gradient(180deg, #fff7ee 0%, #fdecd8 100%);
+  background: #faf0e5;
 }
 
 .cc-tray--no .cc-tray-label {
@@ -1057,6 +1085,88 @@ button.clawcap-help:focus-visible {
 
 .cc-action:disabled::before {
   opacity: 0.55; /* the catch-light dims with the button */
+}
+
+/* ── pokéball livery (Pokémon pack) ──────────────────────────────────────────
+   The same convex arcade dome, re-skinned as a vinyl-toy Poké Ball: red cap,
+   thin dark band, ivory base. No label — the ball IS the button (the
+   aria-label still says Grab/Drop). The ::before that was the candy
+   catch-light becomes the ball's black-ringed centre button. */
+.cc-action--ball {
+  background:
+    /* gloss on the red cap */
+    radial-gradient(ellipse 58% 30% at 50% 13%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0) 100%),
+    /* cap / band / base — the band is ~9% of the diameter, like the real prop */
+    linear-gradient(
+      180deg,
+      #ff6f76 0%,
+      #ee3340 32%,
+      #d6232f 45.5%,
+      #23232a 45.5%,
+      #23232a 54.5%,
+      #f4f5f7 54.5%,
+      #e6e8ed 80%,
+      #c9cdd5 100%
+    );
+  box-shadow:
+    0 0 0 5px var(--cc-fill),
+    0 0 0 5.5px rgba(60, 60, 67, 0.1),
+    0 5px 10px -2px rgba(40, 45, 60, 0.4),
+    inset 0 2px 3px rgba(255, 255, 255, 0.4),
+    inset 0 -4px 7px rgba(40, 45, 60, 0.3);
+}
+
+/* centre button: white core in a black ring, flush with the band */
+.cc-action--ball::before {
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 3.5px solid #23232a;
+  background: radial-gradient(circle at 50% 32%, #ffffff 0%, #eef0f4 58%, #c8ccd4 100%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px rgba(70, 75, 90, 0.28);
+}
+
+.cc-action--ball:active:not(:disabled) {
+  box-shadow:
+    0 0 0 5px var(--cc-fill),
+    0 0 0 5.5px rgba(60, 60, 67, 0.1),
+    0 2px 4px -1px rgba(40, 45, 60, 0.38),
+    inset 0 2px 3px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(40, 45, 60, 0.34);
+}
+
+/* powered-down ball: the cap grays out, the shape keeps reading as a pokéball */
+.cc-action--ball:disabled {
+  background:
+    radial-gradient(ellipse 58% 30% at 50% 13%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 100%),
+    linear-gradient(
+      180deg,
+      #e9ebef 0%,
+      #d4d7dd 32%,
+      #c2c6cd 45.5%,
+      #9a9da6 45.5%,
+      #9a9da6 54.5%,
+      #f2f3f5 54.5%,
+      #e2e4e9 80%,
+      #cfd3da 100%
+    );
+  box-shadow:
+    0 0 0 5px var(--cc-fill),
+    0 0 0 5.5px rgba(60, 60, 67, 0.1),
+    0 4px 8px -3px rgba(30, 30, 40, 0.18),
+    inset 0 2px 3px rgba(255, 255, 255, 0.7),
+    inset 0 -4px 7px rgba(90, 95, 105, 0.22);
+}
+
+.cc-action--ball:disabled::before {
+  opacity: 1; /* the centre button stays crisp; the grey cap reads "off" */
+  border-color: #9a9da6;
 }
 
 /* "release now" — a soft green pulse rings the button while the catch hovers
